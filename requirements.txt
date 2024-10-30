@@ -75,7 +75,7 @@ smmap==5.0.1
 soupsieve==2.5
 stanio==0.5.0
 stocknews==0.9.11
-streamlit==1.32.2
+streamlit
 tenacity==8.2.3
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
