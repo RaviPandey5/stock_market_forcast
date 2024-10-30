@@ -20,13 +20,22 @@ period = n_years * 365
 start = date.today() - timedelta(days=period)
 end = datetime.today().strftime('%Y-%m-%d')
 
-# Download stock data
-@st.cache
+# Download stock data with caching and error handling
+@st.cache_data
 def load_data(ticker, start, end):
-    data = yf.download(ticker, start=start, end=end)
-    data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
-    data = data.dropna(subset=['Close'])
-    return data
+    try:
+        data = yf.download(ticker, start=start, end=end)
+        # Check if data is empty or doesn't have 'Close' column
+        if data.empty or 'Close' not in data.columns:
+            st.warning(f"No data found for ticker {ticker}. Please check the ticker symbol.")
+            return pd.DataFrame()  # Return empty DataFrame if data is invalid
+        # Ensure 'Close' column is numeric
+        data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
+        data = data.dropna(subset=['Close'])  # Drop rows where 'Close' is NaN
+        return data
+    except Exception as e:
+        st.error(f"Error fetching data for ticker {ticker}: {e}")
+        return pd.DataFrame()  # Return empty DataFrame in case of error
 
 df = load_data(user_input, start, end)
 
