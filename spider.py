@@ -23,21 +23,19 @@ end = datetime.today().strftime('%Y-%m-%d')
 # Download stock data with caching and error handling
 @st.cache_data
 def load_data(ticker, start, end):
-    try:
-        data = yf.download(ticker, start=start, end=end)
-        # Check if data is empty or doesn't have 'Close' column
-        if data.empty or 'Close' not in data.columns:
-            st.warning(f"No data found for ticker {ticker}. Please check the ticker symbol.")
-            return pd.DataFrame()  # Return empty DataFrame if data is invalid
-        # Ensure 'Close' column is numeric
-        data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
-        data = data.dropna(subset=['Close'])  # Drop rows where 'Close' is NaN
-        return data
-    except Exception as e:
-        st.error(f"Error fetching data for ticker {ticker}: {e}")
-        return pd.DataFrame()  # Return empty DataFrame in case of error
+    data = yf.download(ticker, start=start, end=end)
+    # Check if data is empty or doesn't contain the 'Close' column
+    if data.empty or 'Close' not in data.columns:
+        return None
+    # Ensure 'Close' column is numeric
+    data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
+    data = data.dropna(subset=['Close'])  # Drop rows where 'Close' is NaN
+    return data
 
+# Load data and handle if None is returned
 df = load_data(user_input, start, end)
+if df is None:
+    st.error(f"Error fetching data for ticker {user_input}. Please check the ticker symbol and try again.")
 
 # Define tabs
 ma, fundamental, news, predict = st.tabs(['📈 Moving Average', '📊 Fundamental Data', '📰 News', '🔮 Predict Price'])
@@ -47,8 +45,8 @@ with ma:
     st.title('Moving Average Trend')
     st.subheader(f'Data from {start.strftime("%Y")} to {end}')
 
-    if df.empty:
-        st.error("No data available for the selected stock and time range.")
+    if df is None or df.empty:
+        st.warning("No data available for the selected stock and time range.")
     else:
         st.write(df.describe())
 
@@ -81,7 +79,7 @@ with ma:
 # Fundamental Data Tab
 with fundamental:
     st.subheader(f"Daily **closing price** for {user_input}")
-    if not df.empty:
+    if df is not None and not df.empty:
         st.line_chart(df['Close'], height=250, use_container_width=True)
     else:
         st.write("No data available for the selected stock.")
